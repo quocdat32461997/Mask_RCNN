@@ -22,7 +22,6 @@ class COCO_loader:
             batch_size - size of batches
             image_shape - shape of images
         """
-        super(COCO_loader, self).__init__()
         self.data = COCO(annotation_path)
         self.image_path = image_path
         self.classes = self.get_classes(print_classes = True) # by default, get categories
@@ -74,6 +73,12 @@ class COCO_loader:
 
 
             return image, bboxes, masks
+
+    def __call__(self):
+        return tf.data.Dataset.from_generator(self.generator,
+            (tf.float64, tf.int64, tf.int64),
+            (tf.TensorShape([None, self.image_shape, self.image_shape, 3]), tf.TensorShape([None, 5]), tf.TensorShape([None, self.image_shape, self.image_shape])))
+
     def preproces(self, image_path, bboxes, masks):
         """
         preprocess - method to resize image and augment bbox and mask
@@ -205,10 +210,18 @@ class COCO_loader:
                 pad_size = max(0, self.max_objects - len(bboxes))
                 np.concatenate((bboxes, np.zeros((pad_size, 5))))
                 np.concatenate((masks, np.zeros((pad_size, h, w))))
-                
+
         return image, bboxes, masks
 
     def rand(a=0, b=1):
+        """
+        rand - method to randomly generate float number between a and b
+        Inputs:
+            a - lower bound
+            b - upper bound
+        Outputs:
+            __ - random float number between a and b
+        """
         return np.random.rand()*(b-a) + a
 
     def annotation_parser(self, annotations):
