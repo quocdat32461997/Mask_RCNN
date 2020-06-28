@@ -18,5 +18,5 @@ unzip coco/annotations_trainval2017.zip -d ./coco
 
 # download and install pycocotools
 git clone https://github.com/cocodataset/cocoapi.git
-cd ./cocoapi/PythonAPI
-make install
+cd data/cocoapi/PythonAPI
+python3 setup.py bdist_wheel -d pycocotools install

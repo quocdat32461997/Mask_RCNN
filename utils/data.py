@@ -8,9 +8,9 @@ from pycocotools.coco import COCO
 import json
 import cv2
 
-class COCO_loader:
+class COCO:
     """
-    COCO_loader - data loader class to load data
+    COCO - data loader class to load data
     """
     def __init__(self, image_path, annotation_path, max_objects = 20, batch_size = 16, image_shape = (416, 416),
         jitter = .3, hue = .1, sat = 1.5, val = 1.5, data_augmentation = True, proc_image = True):
