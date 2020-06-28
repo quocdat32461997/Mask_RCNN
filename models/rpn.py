@@ -17,9 +17,8 @@ class RegionProposalNetwork:
         outputs = self.rpn(inputs)
         cls_outputs, reg_outputs = self.cls(outputs), self.reg(outputs)
 
-        return 
+        return
 
     def predict(self, inputs):
         outputs = self.rpn(inputs)
-        cls_outputs = self.cls(outputs)
-        reg_outputs = self.reg(outputs)
+        return self.cls(outputs), self.reg(outputs)
