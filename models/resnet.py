@@ -21,7 +21,7 @@ class ResNet:
         self.resnet = tf.keras.applications.ResNet101V2(include_top = False, weights = 'imagenet',
             input_tensor = input_tensor, input_shape = input_shape, pooling = None)
 
-    def call(self):
+    def call(self, inputs):
         """
         Outputs: ResNet model
         """

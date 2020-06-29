@@ -7,7 +7,18 @@ import tensorflow as tf
 from tensorflow.keras import Model
 
 class ROIAlign(tf.keras.Model):
-    def __init__(self):
+    """
+    ROIAlign - layer to align feature maps with proposed regions
+    """
+    def __init__(self, name = 'ROIAlign'):
+        self.name = name
 
     def call(self, features, regions):
-        return None
+        """
+        Inputs:
+            features - CONV feature maps from ResNet
+            regions - proposed bounding boxes from RPN
+        Ouputs:
+            features - feature maps aligned with proposed regions
+        """
+        return features

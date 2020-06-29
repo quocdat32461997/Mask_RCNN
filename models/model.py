@@ -5,14 +5,14 @@ modle.py - module to implement Mask RCNN
 """ import dependencies """
 
 import tensorflow as tf
-from tensorflow.keras.layers import Concatenate, Dense, Conv2D, UpSampling2D
+from tensorflow.keras.layers import Input, Concatenate, Dense, Conv2D, UpSampling2D
 
 from models.resnet import ResNet
 from models.rpn import RegionProposalNetwork
 from models.roi import ROIAlign
 
 class Mask_RCNN(tf.keras.Model):
-    def __init__(self, anchors, num_class, max_objects = 20, resnet_unfreeze, name = 'Mask_RCNN'):
+    def __init__(self, anchors, num_class, image_shape = 416, max_objects = 20, resnet_unfreeze, name = 'Mask_RCNN'):
         """
         Inputs:
             anchors - list of anchors
@@ -20,12 +20,12 @@ class Mask_RCNN(tf.keras.Model):
             name - model name
         """
         self.name = name
-        self.resnet = ResNet(resnet_unfreeze, )
+        self.resnet = ResNet(input_tensor = Input(shape = (image_shape, image_shape, 3)), input_shape = image_shape)
         self.rpn = RegionProposalNetwork(anchors)
         self.roi = ROIAlign()
         self.FC_layers = []
         self.mask_layers = []
-        for filtes in [256, num_class]]:
+        for filtes in [256, num_class]:
             self.FC_layers.append(Dense(units = 4096))
             self.mask_layers.append(Conv2D(filters = filters, kernel_size = 3, strides = 1, padding = 'same'))
         self.class_layer = Dense(units = num_classs)
@@ -41,8 +41,8 @@ class Mask_RCNN(tf.keras.Model):
             masks - numpy array of masks in shape of [batch_size, max_obejcts, height, width]
         """
         outputs = self.resnet(inputs)
-        rpns = self.rpn(outputs)
-        outputs = self.roi(Concatenate(axis = 0)([outputs, prns]))
+        rpns = self.rpn(outputs, outputs)
+        outputs = self.roi(outputs, prns)
         for layer in self.FC_layers:
             outputs = layer(outputs)
 
@@ -56,6 +56,7 @@ class Mask_RCNN(tf.keras.Model):
             masks = layer(masks)
 
         return classes, bbboxes, masks
+
     def loss(self, classes, bboxes, masks, true_bboxes, true_masks):
         """
         Inputs:
