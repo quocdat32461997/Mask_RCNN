@@ -18,7 +18,7 @@ class ResNet:
             name - layer name
         """
         self.name = name
-        self.resnet = tf.keras.applications.ResNet101V2(include_top = False, weights = 'imagenet',
+        self.resnet = tf.keras.applications.ResNet50(include_top = False, weights = 'imagenet',
             input_tensor = input_tensor, input_shape = input_shape, pooling = None)
 
     def call(self, inputs):

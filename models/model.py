@@ -22,7 +22,7 @@ class Mask_RCNN(tf.keras.Model):
         self.name = name
         self.resnet = ResNet(input_tensor = Input(shape = (image_shape, image_shape, 3)), input_shape = image_shape)
         self.rpn = RegionProposalNetwork(anchors)
-        self.roi = ROIAlign()
+        self.roi = ROIAlign(image_shape = image_shape)
         self.FC_layers = []
         self.mask_layers = []
         for filtes in [256, num_class]:
@@ -41,8 +41,11 @@ class Mask_RCNN(tf.keras.Model):
             masks - numpy array of masks in shape of [batch_size, max_obejcts, height, width]
         """
         outputs = self.resnet(inputs)
-        rpns = self.rpn(outputs, outputs)
+        prns = self.rpn(outputs)
         outputs = self.roi(outputs, prns)
+
+        
+
         for layer in self.FC_layers:
             outputs = layer(outputs)
 

@@ -14,24 +14,31 @@ class RegionProposalNetwork(tf.keras.Model):
     def __init__(self, num_anchors, name = 'RPN'):
         """
         Inputs:
-            num_anchors - list of anchors
+            num_anchors - maximum possible proposals for each location
             name - RegionProposalNetwork model
         """
+        self.num_anchors = num_anchors
         self.rpn = Conv2D(filters = 512, kernel_size = 3, activation = 'relu')
-        self.cls = Conv2D(filters = 2 * num_anchors, kernel_size = 1)
-        self.reg = Conv2D(filters = 4 * num_anchors, kernel_size = 1)
+        self.obj = Dense(2 * num_anchors, activation = 'softmax')
+        self.reg = Dense(4 * num_anchors)
+
         self.name = name
 
     def call(self, inputs):
         """
         Inputs:
-            inputs - numpy array of feature maps in shape of [batch_size, height, width, filters]
+            inputs - numpy array of feature maps
+                    in shape of [batch_size, height, width, filters]
         Outputs
-            classes - proposed classes for corresponding bounding boxes
-            bboxes - proposed bounding boxes
+            self.obj(outputs)
+                    - object detection for corresponding bounding boxes
+                    in shape of [batch_size, 2 * num_anchors]
+            self.reg(outputs)
+                    - proposed bounding boxes
+                    in shape of [batch_size, 4 * num_anchors]
         """
         outputs = self.rpn(inputs)
-        return self.cls(outputs), self.reg(outputs)
+        return self.obj(outputs), self.reg(outputs)
 
     def loss(self, classes, bboxes, targets):
         """
