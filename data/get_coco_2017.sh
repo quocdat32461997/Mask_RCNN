@@ -1,4 +1,4 @@
-ar#!/bin/bash
+#!/bin/bash
 # Scrip to download COCO 2017 for Instance Segmentation
 
 # Create folder coco
@@ -18,6 +18,6 @@ unzip coco/annotations_trainval2017.zip -d ./coco
 
 # download and install pycocotools
 git clone https://github.com/cocodataset/cocoapi.git
-cd data/cocoapi/PythonAPI
+cd cocoapi/PythonAPI
 sed -i 's/python/python3/g' Makefile
 sudo make install

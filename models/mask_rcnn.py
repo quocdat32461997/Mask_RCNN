@@ -1,5 +1,5 @@
 """
-modle.py - module to implement Mask RCNN
+mask_rcnn.py - module to implement Mask RCNN
 """
 
 """ import dependencies """
@@ -8,15 +8,14 @@ import tensorflow as tf
 from tensorflow.keras.layers import Input, Concatenate, Dense, Conv2D, BatchNormalization, ReLU, AveragePooling2D, Softmax, TimeDistributed, Conv2DTranspose
 
 from models.resnet import ResNet
-from models.rpn import RegionProposalNetwork
+from models.rpn import RegionProposalNetwork as RPN
 from models.roi import ROIAlign
 
-class
-class Mask_RCNN(tf.keras.Model):
+class MaskRCNN(tf.keras.Model):
     """
     Mask_RCNN - implementation of Mask RCNN model consisting of ResNet50, Region Proposal Network, and Classifier & Mask Generator
     """
-    def __init__(self, anchors, num_class, image_shape = 416, max_objects = 20, resnet_unfreeze, name = 'Mask_RCNN'):
+    def __init__(self, anchors, num_class, image_shape = 416, max_objects = 20, resnet_unfreeze = [-1], name = 'Mask_RCNN'):
         """
         Inputs:
             anchors - list of anchors
@@ -40,10 +39,10 @@ class Mask_RCNN(tf.keras.Model):
         self.resnet = ResNet(input_tensor = Input(shape = (image_shape, image_shape, 3)), input_shape = image_shape)
 
         # regino proposal network
-        self.rpn = RegionProposalNetwork(anchors)
+        self.rpn = RPN(anchors)
 
         # roi network
-        self.roi = ROIAlign(image_shape = image_shape)
+        self.roi = ROIAlign(image_shape = image_shape, crop_size = 7, num_anchors = len(self.anchors) // 3)
         self.conv1 = Conv2D(1024, kernel_size = 3, padding = 'same')
         self.conv2 = Conv2D(2048, kernel_size = 3, padding = 'same')
 

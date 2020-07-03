@@ -11,16 +11,17 @@ class RegionProposalNetwork(tf.keras.Model):
     """
     RegionProposalNetwork - a small model to propose bounding boxes for ROIAlign layer
     """
-    def __init__(self, num_anchors, name = 'RPN'):
+    def __init__(self, anchors, name = 'RPN'):
         """
         Inputs:
             num_anchors - maximum possible proposals for each location
             name - RegionProposalNetwork model
         """
-        self.num_anchors = num_anchors
+        self.anchors = anchors
+        self.num_anchors = len(self.anchors)
         self.rpn = Conv2D(filters = 512, kernel_size = 3, activation = 'relu')
-        self.obj = Conv2D(filters = 2 * num_anchors, kernel_size = 1)
-        self.reg = Conv2D(filters = 4 * num_anchors, kernel-size = 1)
+        self.obj = Conv2D(filters = 2 * self.num_anchors, kernel_size = 1)
+        self.reg = Conv2D(filters = 4 * self.num_anchors, kernel_size = 1)
         self.name = name
 
     def call(self, inputs):

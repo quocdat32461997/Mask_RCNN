@@ -5,17 +5,15 @@ roi.py - module to implement ROIAling layer for Mask RCNN
 """ import dependencies """
 import tensorflow as tf
 from tensorflow.keras import Model
-from tensorflow.image import crop_and_resize
 
 class ROIAlign(tf.keras.Model):
     """
     ROIAlign - layer to align feature maps with proposed regions
     """
-    def __init__(self, image_shape, batch_size, crop_size = 7, num_anchors = 9, name = 'ROIAlign'):
+    def __init__(self, image_shape, crop_size = 7, num_anchors = 9, name = 'ROIAlign'):
         self.name = name
         self.image_shape = image_shape
-        self.batch_size = batch_size
-        self.num_anchors  num_anchors
+        self.num_anchors = num_anchors
         self.crop_size = crop_size
 
     def call(self, features, regions, scores):
@@ -53,8 +51,8 @@ class ROIAlign(tf.keras.Model):
         box_indices = tf.reshape(tf.tile(
             tf.expand_dims(tf.range(features.shape[0]), axis = -1),
                 multiples = [1, num_boxes]), (-1))
-        features = crop_and_resize(features, regions,
+        features = tf.image.crop_and_resize(features, regions,
             box_indices = box_indices, crop_size = (self.crop_size, self.crop_size),
             name = 'cropping_objects')
-        
+
         return features, regions, scores

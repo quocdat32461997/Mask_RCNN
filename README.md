@@ -11,6 +11,7 @@ Mask RNN is a variant of Faster RCNN model [3]. Similar to Faster RCNN, Mask RCN
 #### * COCO 2017
 ##### Download COCO 2017 and install pycocotools to parse COCO annotations
 ```
+pip3 install Cpython
 cd data
 ./get_coco_2017.sh
 ```
