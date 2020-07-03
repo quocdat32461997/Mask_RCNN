@@ -6,11 +6,12 @@ resnet.py - module to implement pretrained ResNet model as backbone
 import tensorflow as tf
 from tensorflow.keras import Model
 
-class ResNet:
+class ResNet(tf.keras.Model):
     """
-    ResNet - class to implement ResNet model
+    ResNet - class for Transfer Learning implementation of ResNet50 model
     """
-    def __init__(self, input_tensor, input_shape, name = 'ResNet'):
+    def __init__(self, input_tensor, input_shape, include_top = False, weights = 'imagent',
+        pooling = None, name = 'ResNet'):
         """
         Inputs:
             input_tensor - output of Input layer
@@ -18,11 +19,14 @@ class ResNet:
             name - layer name
         """
         self.name = name
-        self.resnet = tf.keras.applications.ResNet50(include_top = False, weights = 'imagenet',
-            input_tensor = input_tensor, input_shape = input_shape, pooling = None)
+        self.resnet = tf.keras.applications.ResNet50(include_top = include_top, weights = weights,
+            input_tensor = input_tensor, input_shape = input_shape, pooling = pooling)
 
     def call(self, inputs):
         """
-        Outputs: ResNet model
+        Inputs:
+            inputs - tensor of images in shape of [batch_size, height, width, 3]
+        Outputs:
+            self.resnet(inputs) - tensor of conv feature maps extracted from 4th CONV block in ResNet50
         """
-        return self.resnet
+        return self.resnet(inputs)
