@@ -17,12 +17,12 @@ class RegionProposalNetwork(tf.keras.Model):
             num_anchors - maximum possible proposals for each location
             name - RegionProposalNetwork model
         """
+        super(RegionProposalNetwork, self).__init__()
         self.anchors = anchors
-        self.num_anchors = len(self.anchors)
-        self.rpn = Conv2D(filters = 512, kernel_size = 3, activation = 'relu')
-        self.obj = Conv2D(filters = 2 * self.num_anchors, kernel_size = 1)
-        self.reg = Conv2D(filters = 4 * self.num_anchors, kernel_size = 1)
-        self.name = name
+        self.num_anchors = len(self.anchors) // 2
+        self.conv = Conv2D(filters = 512, kernel_size = 3, activation = 'relu')
+        self.obj = Conv2D(filters = 2 * self.num_anchors, kernel_size = 1, name = 'rpn_obj_detection')
+        self.reg = Conv2D(filters = 4 * self.num_anchors, kernel_size = 1, name = 'rpn_bbox_detection')
 
     def call(self, inputs):
         """
@@ -37,14 +37,18 @@ class RegionProposalNetwork(tf.keras.Model):
                     - proposed bounding boxes
                     in shape of [batch_size, h x w x num_anchors, 4]
         """
-        batch_size = inputs.shape[0]
-        outputs = self.rpn(inputs)
+        batch_size, h, w, _ = inputs.shape
+        outputs = self.conv(inputs)
         obj_class = self.obj(outputs)
         bboxes = self.reg(outputs)
 
-        obj_class = tf.reshape(obj_class, (batch_size, -1, 2)) #reshape to [batch_size, h x w x anchors_per_location, 2]
+        obj_class = tf.reshape(obj_class, shape = [-1, h * w * self.num_anchors, 2]) #reshape to [batch_size, h x w x anchors_per_location, 2]
+        obj_class = Softmax()(obj_class)
+        bboxes = tf.reshape(bboxes, shape = [-1, h * w * self.num_anchors, 4])
 
-        return Softmax(obj_class), tf.reshape(bboxes, (batch_size, -1, 4))
+        print("obj_class: {}".format(obj_class))
+        print("bboxes: {}".format(bboxes))
+        return obj_class, bboxes
 
     def loss(self, classes, bboxes, targets):
         """
