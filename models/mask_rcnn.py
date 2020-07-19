@@ -15,7 +15,7 @@ class MaskRCNN(tf.keras.Model):
     """
     Mask_RCNN - implementation of Mask RCNN model consisting of ResNet50, Region Proposal Network, and Classifier & Mask Generator
     """
-    def __init__(self, anchors, num_class, batch_size, image_shape = 416, max_objects = 20, name = 'Mask_RCNN'):
+    def __init__(self, anchors, num_class, batch_size, backbone_weights = 'weights/resnet50_weights.h5', image_shape = 416, max_objects = 20, name = 'Mask_RCNN'):
         """
         Inputs:
             anchors - list of anchors
@@ -64,19 +64,20 @@ class MaskRCNN(tf.keras.Model):
             bboxes - numpy array of bounding boxes in shape of [batch_size, max_objects, 4 * num_class]
             masks - numpy array of masks in shape of [batch_size, max_obejcts, height, width]
         """
-        print("MaskRCNN input shape", inputs.shape)
+        # resnet
         outputs = self.resnet(inputs)
-        print("Resnet output shape {}".format(outputs.shape))
+
+        # rpn
         regions, scores = self.rpn(outputs)
-        print("RPN outputs: regions-{} scores-{}".format(regions.shape, scores.shape))
+
+        # roi align
         outputs, regions, scores = self.roi(outputs, regions, scores)
-        print("ROI outputs: features {} regions {} scores {}".format(outputs.shape, regions.shape, scores.shape))
         outputs = ReLU()(BatchNormalization()(self.conv1(outputs)))
         outptus = ReLU()(BatchNormalization()(self.conv2(outputs)))
 
         # class and bbox prediction
         class_logits, class_probs, bboxes = self.rpn_classifier(outputs)
-        print("Class probs {} and bboxes {}".format(class_probs.shape, bboxes.shape))
+        
         # mask prediction
         masks = self.mask_generator(outputs)
 

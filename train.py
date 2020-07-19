@@ -48,8 +48,9 @@ def main(args):
         num_class = 80
 
     model = MaskRCNN(anchors = cfg.ANCHORS, num_class = num_class, batch_size = 8, image_shape = cfg.IMAGE_SHAPE, max_objects = cfg.MAX_OBJECTS)
-    model.compile(optimizer = Adam(learning_rate = cfg.LEARNING_RATE), loss = 'mse')
-    model.predict(np.zeros((8, cfg.IMAGE_SHAPE, cfg.IMAGE_SHAPE, 3)))
-    print(model.summary())
+    model()
+    #model.compile(optimizer = Adam(learning_rate = cfg.LEARNING_RATE), loss = 'mse')
+    #model.predict(np.zeros((8, cfg.IMAGE_SHAPE, cfg.IMAGE_SHAPE, 3)))
+    print(model)
 if __name__ == '__main__':
     app.run(main)

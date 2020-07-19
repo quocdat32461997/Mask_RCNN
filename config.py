@@ -8,7 +8,7 @@ COCO_PATH = os.path.join(DATA_PATH, 'coco')
 
 CUSTOM_PATH = os.path.join(DATA_PATH, 'custom')
 
-WEIGHTS_DIR = os.path.join(ROOT_PATH, 'weights')
+RESNET50_WEIGHTS = os.path.join(ROOT_PATH, 'weights', 'resnet50_weights.h5')
 
 # model parameters
 IMAGE_SHAPE = 416
