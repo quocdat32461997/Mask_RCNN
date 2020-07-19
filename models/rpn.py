@@ -5,24 +5,24 @@ rpn.py - module to implement Region Proposal Network
 """ import dependencies """
 
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D
+from tensorflow.keras.layers import Conv2D, Softmax
 
 class RegionProposalNetwork(tf.keras.Model):
     """
     RegionProposalNetwork - a small model to propose bounding boxes for ROIAlign layer
     """
-    def __init__(self, num_anchors, name = 'RPN'):
+    def __init__(self, anchors, name = 'RPN'):
         """
         Inputs:
             num_anchors - maximum possible proposals for each location
             name - RegionProposalNetwork model
         """
-        self.num_anchors = num_anchors
-        self.rpn = Conv2D(filters = 512, kernel_size = 3, activation = 'relu')
-        self.obj = Dense(2 * num_anchors, activation = 'softmax')
-        self.reg = Dense(4 * num_anchors)
-
-        self.name = name
+        super(RegionProposalNetwork, self).__init__()
+        self.anchors = anchors
+        self.num_anchors = len(self.anchors) // 2
+        self.conv = Conv2D(filters = 512, kernel_size = 3, activation = 'relu')
+        self.obj = Conv2D(filters = 2 * self.num_anchors, kernel_size = 1, name = 'rpn_obj_detection')
+        self.reg = Conv2D(filters = 4 * self.num_anchors, kernel_size = 1, name = 'rpn_bbox_detection')
 
     def call(self, inputs):
         """
@@ -32,13 +32,23 @@ class RegionProposalNetwork(tf.keras.Model):
         Outputs
             self.obj(outputs)
                     - object detection for corresponding bounding boxes
-                    in shape of [batch_size, 2 * num_anchors]
+                    in shape of [batch_size, h x w x num_anchors, 2]
             self.reg(outputs)
                     - proposed bounding boxes
-                    in shape of [batch_size, 4 * num_anchors]
+                    in shape of [batch_size, h x w x num_anchors, 4]
         """
-        outputs = self.rpn(inputs)
-        return self.obj(outputs), self.reg(outputs)
+        batch_size, h, w, _ = inputs.shape
+        outputs = self.conv(inputs)
+        obj_class = self.obj(outputs)
+        bboxes = self.reg(outputs)
+
+        obj_class = tf.reshape(obj_class, shape = [-1, h * w * self.num_anchors, 2]) #reshape to [batch_size, h x w x anchors_per_location, 2]
+        obj_class = Softmax()(obj_class)
+        bboxes = tf.reshape(bboxes, shape = [-1, h * w * self.num_anchors, 4])
+
+        print("obj_class: {}".format(obj_class))
+        print("bboxes: {}".format(bboxes))
+        return obj_class, bboxes
 
     def loss(self, classes, bboxes, targets):
         """
