@@ -10,7 +10,7 @@ from absl import flags, app, logging
 from tensorflow.keras.optimizers import Adam
 
 from models.mask_rcnn import MaskRCNN
-from utils.data import COCOLoader
+#from utils.data import COCOLoader
 import config as cfg
 
 # define script FLAGS
@@ -35,6 +35,7 @@ def main(args):
     print("Building data loader for:", FLAGS.data_path)
     # by default, training on COCO dataset
     if FLAGS.data_path == 'coco':
+        from utils.data import COCOLoader
         train_coco = COCOLoader(image_path = os.path.join(cfg.COCO_PATH, 'train2017'), \
             annotation_path = os.path.join(cfg.COCO_PATH, 'annotations/instances_train2017.json'), \
             data_augmentation = True)
@@ -48,7 +49,6 @@ def main(args):
         num_class = 80
 
     model = MaskRCNN(anchors = cfg.ANCHORS, num_class = num_class, batch_size = 8, image_shape = cfg.IMAGE_SHAPE, max_objects = cfg.MAX_OBJECTS)
-    model()
     #model.compile(optimizer = Adam(learning_rate = cfg.LEARNING_RATE), loss = 'mse')
     #model.predict(np.zeros((8, cfg.IMAGE_SHAPE, cfg.IMAGE_SHAPE, 3)))
     print(model)

@@ -6,7 +6,7 @@ roi.py - module to implement ROIAling layer for Mask RCNN
 import tensorflow as tf
 from tensorflow.keras import Model
 
-class ROIAlign(tf.keras.Model):
+class ROIAlign(tf.keras.layers.Layer):
     """
     ROIAlign - layer to align feature maps with proposed regions
     """

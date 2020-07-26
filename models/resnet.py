@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import  Conv2D, BatchNormalization, ReLU, Add, ZeroPadding2D, MaxPool2D
 
-class ResNet:
+class ResNet(tf.keras.layers.Layer):
     def __init__ (self, architecture = 'resnet50', stage5 = False, train_bn = True, name = 'ResNet'):
         """
         ResNet  - class for Transfer Learning implementation of ResNet50 model

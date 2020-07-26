@@ -15,7 +15,7 @@ class MaskRCNN(tf.keras.Model):
     """
     Mask_RCNN - implementation of Mask RCNN model consisting of ResNet50, Region Proposal Network, and Classifier & Mask Generator
     """
-    def __init__(self, anchors, num_class, batch_size, backbone_weights = 'weights/resnet50_weights.h5', image_shape = 416, max_objects = 20, name = 'Mask_RCNN'):
+    def __init__(self, anchors, num_class, batch_size, backbone_weights = 'weights/resnet50_weights.h5', image_shape = 416, max_objects = 20, training = True, name = 'Mask_RCNN'):
         """
         Inputs:
             anchors - list of anchors
@@ -24,6 +24,7 @@ class MaskRCNN(tf.keras.Model):
             image_shape - input image shape
             max_objects - maximum number of objects
             name - model name
+            training - boolean value to denoe the model in training mode
         """
         super(MaskRCNN, self).__init__()
         # model parameters
@@ -32,6 +33,7 @@ class MaskRCNN(tf.keras.Model):
         self.batch_size = batch_size
         self.image_shape = image_shape
         self.max_objects = max_objects
+        self.training = training
 
         # definition of layers
         # backbone
@@ -62,29 +64,36 @@ class MaskRCNN(tf.keras.Model):
             scores - object confidence for corresponding bounding boxes
             class_probs - numpy array of object classes in shape of [batch_size, max_objects, num_class]
             bboxes - numpy array of bounding boxes in shape of [batch_size, max_objects, 4 * num_class]
-            masks - numpy array of masks in shape of [batch_size, max_obejcts, height, width]
+            masks - numpy array of masks in shape of [batch_size, num_rois, height, width, num_classes]
         """
         # resnet
         outputs = self.resnet(inputs)
 
         # rpn
         regions, scores = self.rpn(outputs)
+        rpn_boxes, rpn_class_logits, rpn_classes = self.rpn(outputs)
 
         # roi align
-        outputs, regions, scores = self.roi(outputs, regions, scores)
+        outputs, roi_bboxes, roi_classes = self.roi(outputs, rpn_boxes, rpn_classes)
         outputs = ReLU()(BatchNormalization()(self.conv1(outputs)))
         outptus = ReLU()(BatchNormalization()(self.conv2(outputs)))
 
         # class and bbox prediction
-        class_logits, class_probs, bboxes = self.rpn_classifier(outputs)
-        
+        class_logits, classes, bboxes = self.rpn_classifier(outputs)
+
         # mask prediction
         masks = self.mask_generator(outputs)
 
-        #return scores, class_probs, bboxes, masks
-        return {'class_probs' : class_probs, 'bboxes' : bboxes, 'masks' : masks}
+        if self.training:
+            #return {'rpn_bboxes' : rpn_boxes, 'rpn_class_logits' : rpn_class_loits, 'class_logits' : class_logits, 'bboxes' : bboxes, 'masks' : masks}
+            return LossLayer()()
+        else:
+            return {'bboxes' : bboxes, 'masks' : masks, 'classes' : classes}
 
     def mask_generator(self, inputs):
+        """
+        mask_generator - function to generate a binary object segmentation
+        """
         masks = self.mask_conv1(inputs)
         masks = self.mask_conv2(masks)
 
@@ -103,16 +112,24 @@ class MaskRCNN(tf.keras.Model):
 
         return class_logits, class_probs, bboxes
 
-    def loss(self, classes, bboxes, masks, true_bboxes, true_masks):
+class LossLayer(tf.keras.layers.Layer):
+    """
+    Loss - a class to implement loss of Mask RCNN
+    """
+    def __init__(self, name = 'loss_layer', **kwargs):
+    #def __init__(self, classes, bboxes, masks, true_bboxes, true_masks):
+        super(LossLayer, self).__init__(**kwargs)
+
+    def call(self, inputs):
         """
         Inputs:
-            classes - predicted classes in shape of [batch_size, max_objects, num_class]
-            bboxes - predicted bounding boxes in shape of [batch_size, max_objects * num_class]
-            masks - predicted masks in shape of [batch_size, max_objects, height, width]
-            true_bboxes - target bounding boxes in shape of [batch_size, height, width, 5]
-            true_masks - target masks in shape of [batch_size, max_objects, height, width]
+            - rpn_bboxes : Tensor of shape [batch_size, num_rois, 4]
+            - rpn_class_logits : Tensor of shape [batch_size, num_rois, 2]
+            - class_logits : Tensor of shape [batch_size, max_objects, num_classes]
+            - bboxes : Tensor of shape [bach_size, max_objects, 4]
+            - masks : Tensor of shape [batch_size, num_rois, height, width, num_class]
         Outputs:
             loss - accumulate loss from ROIAlign and RPN layers
         """
-        loss = 0
-        return loss
+
+        return inputs
