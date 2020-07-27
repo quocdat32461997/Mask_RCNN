@@ -11,7 +11,7 @@ from tensorflow.keras.optimizers import Adam
 
 from models.mask_rcnn import MaskRCNN
 #from utils.data import COCOLoader
-import config as cfg
+import configs
 
 # define script FLAGS
 FLAGS = flags.FLAGS
@@ -48,7 +48,8 @@ def main(args):
         print("custom dataset")
         num_class = 80
 
-    model = MaskRCNN(anchors = cfg.ANCHORS, num_class = num_class, batch_size = 8, image_shape = cfg.IMAGE_SHAPE, max_objects = cfg.MAX_OBJECTS)
+    #model = MaskRCNN(anchors = cfg.ANCHORS, num_class = num_class, batch_size = 8, image_shape = cfg.IMAGE_SHAPE, max_objects = cfg.MAX_OBJECTS)
+    model = MaskRCNN(configs = configs, training = True)
     #model.compile(optimizer = Adam(learning_rate = cfg.LEARNING_RATE), loss = 'mse')
     #model.predict(np.zeros((8, cfg.IMAGE_SHAPE, cfg.IMAGE_SHAPE, 3)))
     print(model)

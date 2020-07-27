@@ -7,15 +7,17 @@ mask_rcnn.py - module to implement Mask RCNN
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Concatenate, Dense, Conv2D, BatchNormalization, ReLU, AveragePooling2D, Softmax, TimeDistributed, Conv2DTranspose
 
-from models.resnet import ResNet
+from models.backbones import ResNet
 from models.rpn import RegionProposalNetwork as RPN
 from models.roi import ROIAlign
+from models.proposal import ProposalLayer
 
 class MaskRCNN(tf.keras.Model):
     """
     Mask_RCNN - implementation of Mask RCNN model consisting of ResNet50, Region Proposal Network, and Classifier & Mask Generator
     """
-    def __init__(self, anchors, num_class, batch_size, backbone_weights = 'weights/resnet50_weights.h5', image_shape = 416, max_objects = 20, training = True, name = 'Mask_RCNN'):
+    #def __init__(self, anchors, num_class, batch_size, nms_threshold = 0.7, backbone_weights = 'weights/resnet50_weights.h5', image_shape = 416, max_objects = 20, training = True, name = 'Mask_RCNN'):
+    def __init__(self, configs, training = True, **kwargs):
         """
         Inputs:
             anchors - list of anchors
@@ -28,22 +30,23 @@ class MaskRCNN(tf.keras.Model):
         """
         super(MaskRCNN, self).__init__()
         # model parameters
-        self.anchors = anchors
-        self.num_class = num_class
-        self.batch_size = batch_size
-        self.image_shape = image_shape
-        self.max_objects = max_objects
+        self.anchors = configs.ANCHORS if len(configs.ANCHORS) != 0 \
+            else self.get_anchors(configs.IMAGE_SHAPE)
         self.training = training
 
         # definition of layers
         # backbone
         self.resnet = ResNet(architecture = 'resnet50', stage5 = False, train_bn = True)
 
-        # regino proposal network
+        # region proposal network
         self.rpn = RPN(anchors)
 
+        # proposal layer
+        self.proposal_layer = ProposalLayer(nms_threshold = configs.RPN_NMS_THRESHOLD, anchors = self.anchors)
+
         # roi network
-        self.roi = ROIAlign(image_shape = image_shape, batch_size = self.batch_size, crop_size = 7, num_anchors = len(self.anchors) // 2)
+        self.roi = ROIAlign(image_shape = image_shape, batch_size = configs.BATCH_SIZE, \
+            crop_size = 7, num_anchors = len(configs.ANCHORS) // 2)
         self.conv1 = Conv2D(1024, kernel_size = 3, padding = 'same')
         self.conv2 = Conv2D(2048, kernel_size = 3, padding = 'same')
 
@@ -66,15 +69,18 @@ class MaskRCNN(tf.keras.Model):
             bboxes - numpy array of bounding boxes in shape of [batch_size, max_objects, 4 * num_class]
             masks - numpy array of masks in shape of [batch_size, num_rois, height, width, num_classes]
         """
-        # resnet
+        # backbone layer
         outputs = self.resnet(inputs)
 
-        # rpn
-        regions, scores = self.rpn(outputs)
+        # region-proposal-network layer
         rpn_boxes, rpn_class_logits, rpn_classes = self.rpn(outputs)
 
+        # proposal layer
+        proposals = self.proposal_layer({'object_logits' : rpn_classes,\
+            'rpn_boxes' : rpn_boxes, 'anchors' : anchors})
         # roi align
         outputs, roi_bboxes, roi_classes = self.roi(outputs, rpn_boxes, rpn_classes)
+
         outputs = ReLU()(BatchNormalization()(self.conv1(outputs)))
         outptus = ReLU()(BatchNormalization()(self.conv2(outputs)))
 
@@ -85,11 +91,32 @@ class MaskRCNN(tf.keras.Model):
         masks = self.mask_generator(outputs)
 
         if self.training:
-            #return {'rpn_bboxes' : rpn_boxes, 'rpn_class_logits' : rpn_class_loits, 'class_logits' : class_logits, 'bboxes' : bboxes, 'masks' : masks}
-            return LossLayer()()
+            return {'rpn_bboxes' : rpn_boxes, 'rpn_class_logits' : rpn_class_loits, 'class_logits' : class_logits, 'bboxes' : bboxes, 'masks' : masks}
         else:
             return {'bboxes' : bboxes, 'masks' : masks, 'classes' : classes}
 
+    def get_anchors(self, image_shape):
+        """
+        Generate a pyramid of anchors for the given image size
+        """
+
+        backbone_shape = 1
+
+        # Cache anchors and reuse if image shape is the same
+        if not hasattr(self.anchor_cache):  #hack to avoid duplicating anchors
+            self.anchor_cache = {}
+        if not tuple(image_shape) in self.anchor_cache:
+            # Generate anchors
+            anchors = utils.generate_pyramid_anchors(
+                scales = configs.ANCHOR_SCALES, \
+                ratios = configs.ANCHOR_RATIOS, \
+                feature_shapes = backbone_shapes, \
+                backbone_strides = configs.BAKCBONE_STRIDES, \
+                anchor_strides = cofnigs.ANCHOR_STRIDES)
+
+            # Normalize coordinates
+            self.anchor_cache[tuple(image_shape)] = utils.norm_bxoes(anchors, image_shape[:2])
+        return self.anchor_scale[tuple(image_shape)]
     def mask_generator(self, inputs):
         """
         mask_generator - function to generate a binary object segmentation
@@ -112,24 +139,16 @@ class MaskRCNN(tf.keras.Model):
 
         return class_logits, class_probs, bboxes
 
-class LossLayer(tf.keras.layers.Layer):
-    """
-    Loss - a class to implement loss of Mask RCNN
-    """
-    def __init__(self, name = 'loss_layer', **kwargs):
-    #def __init__(self, classes, bboxes, masks, true_bboxes, true_masks):
-        super(LossLayer, self).__init__(**kwargs)
-
-    def call(self, inputs):
+    def loss(self, inputs):
         """
+        Loss function for Mask-RCNN
         Inputs:
-            - rpn_bboxes : Tensor of shape [batch_size, num_rois, 4]
-            - rpn_class_logits : Tensor of shape [batch_size, num_rois, 2]
-            - class_logits : Tensor of shape [batch_size, max_objects, num_classes]
-            - bboxes : Tensor of shape [bach_size, max_objects, 4]
-            - masks : Tensor of shape [batch_size, num_rois, height, width, num_class]
+            - inputs : dictionary of Tensor
+                - RPN-bbox-logits
+                - RPN-class-logits
+                - class-logits
+                - bbox-logits
+                - mask
         Outputs:
-            loss - accumulate loss from ROIAlign and RPN layers
+            - loss : cumulative loss
         """
-
-        return inputs

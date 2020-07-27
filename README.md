@@ -21,3 +21,12 @@ cd data
 * [2] Rich feature hierarchies for accurate object detection and semantic segmentation
 Tech report (v5), https://arxiv.org/pdf/1311.2524.pdf
 * [3] Towards Real-Time Object-Detection with Region Proposal Networks, https://arxiv.org/pdf/1506.01497.pdf
+
+### To-Do:
+- [x] Build dataloader
+- [x] Build ResNet that supports both Pyramid Feature Network and the 4th stage of ResNet
+- [x] Build Region Proposal Network
+- [x] Build ROIAlign layer
+- [ ] Build Proposal Layer using Non-Max-Suppression
+- [ ] Build Detection Layer
+- [ ] Build loss functions

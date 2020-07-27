@@ -57,18 +57,3 @@ class RegionProposalNetwork(tf.keras.layers.Layer):
         print("obj_class: {}".format(obj_classes))
         print("bboxes: {}".format(bboxes))
         return bboxes, obj_class_logits, obj_classes
-
-    def loss(self, classes, bboxes, targets):
-        """
-        Inputs:
-            classes - proposed classes in shape of [batch_size, max_objects]
-            bboxes - proposed bounding boxes in shape of [batch_size, max_objects * 4]
-            targets - numpy array of targets in shape of [batch_size, max_objects, 5]
-        Outputs:
-            loss - integer of sum of class and bbox loss
-        """
-        lsos = 0
-        raw_regions = targets[:4]
-        raw_classes = targets[4:]
-
-        return loss

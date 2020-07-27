@@ -17,7 +17,7 @@ class COCOLoader:
     COCO - data loader class to load data
     """
     def __init__(self, image_path, annotation_path, max_objects = 20, batch_size = 16, image_shape = (416, 416),
-        jitter = .3, hue = .1, sat = 1.5, val = 1.5, data_augmentation = True, proc_image = True):
+        jitter = .3, hue = .1, sat = 1.5, val = 1.5, data_augmentation = True, proc_image = True, print_class = False):
         """
         __init__ - funciton to initialize coco class
         Inputs:
@@ -28,7 +28,7 @@ class COCOLoader:
         """
         self.data = COCO(annotation_path)
         self.image_path = image_path
-        self.classes = self.get_classes(print_classes = True) # by default, get categories
+        self.classes = self.get_class(print_classes = print_class) # by default, get categories
         self.batch_size = batch_size
         self.image_shape = image_shape
         self.data_augmentation = data_augmentation
@@ -41,7 +41,7 @@ class COCOLoader:
         self.sat = sat
         self.val = val
 
-    def get_classes(self, print_classes = False, supercategory = False):
+    def get_class(self, print_classes = False, supercategory = False):
         """
         get_classes - method to get class/categories or supercategories
         Inputs:

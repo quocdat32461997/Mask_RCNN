@@ -1,5 +1,5 @@
 """
-resnet.py - module to implement pretrained ResNet model as backbone
+backbones.py - module to implement pretrained ResNet model as backbone
 """
 
 """ import dependencies """
