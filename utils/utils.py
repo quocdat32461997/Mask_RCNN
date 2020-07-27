@@ -69,3 +69,4 @@ def generate_anchors(scale, ratios, feature_shape, feature_stride, anchor_stride
 
     #  Enumerate combinations of shifts, widths, and shifts
     box_xy = tf.concat([grid_x, grid_y], axis = 2)
+    box_wh = tf.stack([heights, widths], axis = 2)
