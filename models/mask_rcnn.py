@@ -42,7 +42,8 @@ class MaskRCNN(tf.keras.Model):
         self.rpn = RPN(anchors)
 
         # proposal layer
-        self.proposal_layer = ProposalLayer(nms_threshold = configs.RPN_NMS_THRESHOLD, anchors = self.anchors)
+        self.proposal_layer = ProposalLayer(proposal_count = configs.PROPOSAL_COUNT, nms_threshold = configs.RPN_NMS_THRESHOLD, \
+            anchors = self.anchors, configs = configs)
 
         # roi network
         self.roi = ROIAlign(image_shape = image_shape, batch_size = configs.BATCH_SIZE, \
@@ -76,8 +77,8 @@ class MaskRCNN(tf.keras.Model):
         rpn_boxes, rpn_class_logits, rpn_classes = self.rpn(outputs)
 
         # proposal layer
-        proposals = self.proposal_layer({'object_logits' : rpn_classes,\
-            'rpn_boxes' : rpn_boxes, 'anchors' : anchors})
+        proposals = self.proposal_layer({'classes' : rpn_classes,\
+            'boxes' : rpn_boxes, 'anchors' : self.anchors})
         # roi align
         outputs, roi_bboxes, roi_classes = self.roi(outputs, rpn_boxes, rpn_classes)
 
@@ -99,7 +100,6 @@ class MaskRCNN(tf.keras.Model):
         """
         Generate a pyramid of anchors for the given image size
         """
-
         backbone_shape = 1
 
         # Cache anchors and reuse if image shape is the same
@@ -116,7 +116,8 @@ class MaskRCNN(tf.keras.Model):
 
             # Normalize coordinates
             self.anchor_cache[tuple(image_shape)] = utils.norm_bxoes(anchors, image_shape[:2])
-        return self.anchor_scale[tuple(image_shape)]
+        return self.anchor_cache[tuple(image_shape)]
+
     def mask_generator(self, inputs):
         """
         mask_generator - function to generate a binary object segmentation

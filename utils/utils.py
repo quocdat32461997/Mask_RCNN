@@ -34,7 +34,7 @@ def generate_pyramid_anchors(scales, ratios, feature_shapes, backbone_strides, a
     anchors = []
     for scale, feature_shape, feature_stride in zip(scales, feature_shapes, feature_strides):
         anchors.append(generate_anchors(scale, ratios, feature_shape, feature_stride, anchor_stride))
-
+    return np.concatenate(anchors, axis = 0)
 def generate_anchors(scale, ratios, feature_shape, feature_stride, anchor_stride):
     """
     generate_anchors - function to generate anchors that are relative to the backbone's feature maps
@@ -62,11 +62,14 @@ def generate_anchors(scale, ratios, feature_shape, feature_stride, anchor_stride
     widhts = scales * ratios
 
     # Enumerate shifts in feature space
-    grid_x = tf.tile(tf.reshapetf.arange(start = 0, limit = feature_shape[0], \
+    grid_x = tf.tile(tf.reshape(tf.arange(start = 0, limit = feature_shape[0], \
         delta = anchor_stride), [1, -1, 1]), [feature_shape[1], 1, 1]) * feature_stride
     grid_y = tf.tile(tf.reshape(tf.arange(start = 0, limit = feature_shape[1], \
         delta = anchor_stride), [-1, 1, 1]), [1, feature_shape[0], 1]) * feature_stride
-
+    heights = tf.tile(tf.reshape(heights, [1, -1, 1]), [heights.shape, 1, 1])
+    widths = tf.tile(tf.reshape(widths, [-1, 1, 1]), [1, widths.shape, 1])
     #  Enumerate combinations of shifts, widths, and shifts
-    box_xy = tf.concat([grid_x, grid_y], axis = 2)
-    box_wh = tf.stack([heights, widths], axis = 2)
+    box_xy = tf.concat([grid_x, grid_y], axis = 2).reshape([-1, 2])
+    box_wh = tf.concat([heights, widths], axis = 2).reshape([-1, 2])
+
+    return tf.concat([box_xy - 0.5 * box_wh, box_xy + 0.5 * box_wh], axis = 1)
